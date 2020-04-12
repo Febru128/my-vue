@@ -8,9 +8,9 @@ class Myvue{
     constructor(options){
         this.data = options.data;
         var id = options.el;
+        this.observe();
         var Dom = this.VnodeContainer(document.querySelector(id));
         document.querySelector(id).appendChild(Dom);
-        this.definePropertyInit();
     }
 
     VnodeContainer(node,flag){ // 虚拟DOM容器
@@ -19,9 +19,7 @@ class Myvue{
         while(child = node.firstChild){
             this.compile(child);
             flag.appendChild(child);
-            if(child.firstChild){
-                this.VnodeContainer(child,flag);
-            }
+            this.VnodeContainer(child,flag);
         }
         return flag;
     }
@@ -33,10 +31,10 @@ class Myvue{
             for(let i=0;i<attr.length;i++){
                 if(attr[i].nodeName === 'v-model'){
                     let name = attr[i].nodeValue;
-                    node.value = this.data[name];
                     node.addEventListener('input',(e)=>{
                         this.data[name] = e.target.value;
                     });
+                    node.value = this.data[name];
                 }
             }
         }
@@ -45,25 +43,29 @@ class Myvue{
                 let name = RegExp.$1; // 匹配到的字符串
                 name = name.trim();
                 node.nodeValue = this.data[name];
+                
             }
         }
     }
 
-    definePropertyInit(){ // 将data做成响应式的
-        let keys = Object.keys(this.data);
-        keys.forEach((el)=>{
-            console.log(this)
-            Object.defineProperty(this.data,el,{
-                get(){
-                    // console.log(this.data[el])
-                    return this.data[el];
-                },
-                set(newVal){
-                    console.log(newVal)
-                    // this.data[el] = newVal;
-                }
-            });
-        })
+    observe(){
+        Object.keys(this.data).forEach((el)=>{
+            this.definePropertyInit(this.data,el,this.data[el]);
+        });
+    }
+
+    definePropertyInit(target,key,value){ // 将data做成响应式的
+        Object.defineProperty(target,key,{
+            get:function(){
+                console.log('get到：'+value);
+                return value;
+            },
+            set:function(newVal){
+                if(newVal === value) return;
+                value = newVal;
+                console.log('set成：'+newVal)
+            }
+        });
     }
 }
 
